@@ -1,0 +1,258 @@
+---
+title: "QBS 103 Final Project Part 3"
+author: "Chichi Illoh"
+date: "2023-08-20"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+
+
+```{r}
+setwd("/Users/Student/Desktop/QBS103/qbs103_finalproj/")
+
+```
+
+```{r}
+meta_data = read.csv("QBS103_finalProject_metadata.csv")
+#head(meta_data)
+gene_data = read.csv("QBS103_finalProject_geneExpression.csv")
+#head(gene_data)
+
+```
+
+Gene:LCN2  
+Continuous variable: Age  
+Categorical Variables: Sex and Disease Status  
+2 more Continuous variables:ferritin, procalcitonin, fibrinogen
+1 more categorical variables:ICU status
+```{r}
+# convert into vertical data and extract specific gene: LCN2
+gene_expression = matrix(gene_data[5,2:127]) 
+head(gene_expression)
+
+# new data frame created to link variables from both data sets into one
+# Adding 2 more continuous variables and one categorical variable
+myData <- data.frame('Subject ID' = seq(1:126), "Gene.Expression" = gene_expression,'Age' = meta_data$age, 'Sex' = meta_data$sex, 'Disease.Status' = meta_data$disease_status, 'ICU.Status' = meta_data$icu_status, 'Ferritin' = meta_data$ferritin.ng.ml., "Procalcitonin" = meta_data$procalcitonin.ng.ml.., "Fibrinogen" = meta_data$fibrinogen)
+head(myData)
+
+
+myData <- myData[!(row.names(myData) %in% c("6","86","104","115")),] # filter out data that do not have exact age and filter out data where sex is unknown
+# Source: https://sparkbyexamples.com/r-programming/drop-dataframe-rows-in-r/?expand_article=1
+
+
+myData$Age<- as.numeric(myData$Age)# Convert age variable to numeric
+myData$Gene.Expression<- as.numeric(myData$Gene.Expression) #convert gene expression variable to numeric
+myData$Ferritin<- as.numeric(myData$Ferritin)
+myData$Procalcitonin<- as.numeric(myData$Procalcitonin)
+myData$Fibrinogen<- as.numeric(myData$Fibrinogen)
+```
+
+```{r}
+data.frame('n' = c(table(myData$Sex)),
+           'perc' = c(round(table(myData$Sex)/122*100,digits = 2)))
+
+data.frame('n' = c(table(myData$Disease.Status)),
+           'perc' = c(round(table(myData$Disease.Status)/122*100,digits = 2)))
+
+data.frame('n' = c(table(myData$ICU.Status)),
+           'perc' = c(round(table(myData$ICU.Status)/122*100,digits = 2)))
+mean(myData$Ferritin, na.rm = TRUE)
+sd(myData$Ferritin, na.rm = TRUE)
+
+mean(myData$Procalcitonin, na.rm = TRUE)
+sd(myData$Procalcitonin, na.rm = TRUE)
+
+mean(myData$Fibrinogen, na.rm = TRUE)
+sd(myData$Fibrinogen, na.rm = TRUE)
+```
+
+
+```{r}
+#require(styler)
+library(reprex)
+library(dplyr)
+library(magick)
+library(knitr)
+library(kableExtra)
+
+# Define Table
+table1 <- data.frame('Variable' = c('**Age** mean (sd)','**Sex** n (%)',
+                                    "Female","Male", '**Disease Status** n (%)', 'no','yes','**ICU Status**', "Yes","No",'**Ferritin** mean (sd)','**Procalcitonin** mean (sd)','**Fibrinogen** mean (sd)'),
+                     "Value" = c('61 (16)','','50 (41.0)','72 (59.0)','','98 (80.3)','24 (19.7)','','57 (46.7)','65 (53.3)','851 (1051.5)', '3 (9.9)', '519 (199.4)'))
+
+# Print table using kable
+t1 <- kable(x = table1, format = "html", caption = 'Table 1',
+      col.names = c("Variable", "n = 122"),
+      align = c('l','r'),escape = T) %>%
+   add_indent(positions = c(3,4,6,7,9,10)) %>%
+  kable_classic()
+save_kable(t1, file = "t1.png")
+
+```
+
+```{r}
+library(tidyverse)
+dev.size()
+hist_labels <- c("Gene Expression Distribution for ", "Gene")
+hist_xlabels <- c("Gene Expression")
+hist_title<- eval(bquote(expression(.(hist_labels[1])~italic(.("LCN2"))~. (hist_labels[2]))))
+hist_xaxis<-eval(bquote(expression(~italic(.("LCN2"))~. (hist_xlabels[1]))))
+scatter_labels <-c("Gene Expression of ", "by Age")
+scatter_title <- eval(bquote(expression(.(scatter_labels[1])~italic(.("LCN2"))~. (scatter_labels[2]))))
+ # Histogram for gene expression
+    histogram<- ggplot(myData, aes(x=Gene.Expression)) +
+  
+    geom_histogram(binwidth = 39,color = "darkblue", fill = "lightblue")+
+  
+    labs(title = hist_title, x = hist_xaxis , y = "Number of Participants")+
+      
+      theme(plot.title = element_text(hjust = 0.5))
+ggsave("histogram.png")  
+
+
+    BlankTheme <- theme(# Remove borders and grid lines
+        panel.border = element_blank(), panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), 
+        # Define my axis
+        axis.line = element_line(colour = "black", linewidth = rel(1)),
+        # Set plot background to white
+        plot.background = element_rect(fill = "white"),
+        panel.background = element_blank(),
+        legend.key = element_rect(fill = 'white'),
+        # Move legend to the top
+        legend.position = 'top')
+# Scatterplot for gene expression and continuous covariate
+    scatterplot<-ggplot(myData, aes(x = Age, y = Gene.Expression, color = Disease.Status))+
+  
+      geom_point(size = 2)+
+      
+      labs(title = scatter_title, x = "Age (yrs)", y = hist_xaxis, color = "Disease Status")+
+  
+      scale_color_manual(values = c("#0066CC", "#CCCCFF")) +
+  
+      theme(plot.title = element_text(hjust = 0.5))+
+      
+      BlankTheme+
+      
+      scale_color_discrete(labels=c('Has COVID-19', 'No COVID-19'))
+ggsave("scatter.png")       
+      
+    
+    
+
+
+
+    BlankTheme <- theme(# Remove borders and grid lines
+            panel.border = element_blank(), panel.grid.major = element_blank(),
+            panel.grid.minor = element_blank(), 
+            # Define my axis
+            axis.line = element_line(colour = "black", linewidth = rel(1)),
+            # Set plot background to white
+            plot.background = element_rect(fill = "white"),
+            panel.background = element_blank(),
+            legend.key = element_rect(fill = 'white'), 
+            # Move legend to the top
+            legend.position = 'top')
+    # Box plot of gene expression separated by sex and disease status
+
+    boxplot<-ggplot(myData, aes(x = Disease.Status, y = Gene.Expression, fill = Sex))+
+  
+      geom_boxplot()+ 
+  
+      
+  
+  
+      labs(title = "Boxplot of Gene Expression grouped by Disease Status and Sex", x = "Disease Status", y = hist_xaxis, fill = "Sex")+
+  
+      BlankTheme+
+      
+      theme(plot.title = element_text(hjust = 0.5))+
+      
+      scale_x_discrete(labels = c("Has COVID-19", "No COVID-19"))+
+      
+      scale_fill_discrete(labels = c("Not in the ICU", "In the ICU"))+
+      
+      scale_fill_manual(values = c('#00CC66','#6699CC')) 
+ ggsave("boxplot.png")    
+    
+      plot(histogram)
+      plot(scatterplot)
+      plot(boxplot)
+      
+
+```
+
+
+```{r}
+genes_11 <-gene_data[5:15,2:127]
+
+# Calculate variance of each miRNA
+variance <- apply(genes_11,MARGIN = 1,FUN = var)
+# Order rows of miRNA so that highest variance in expression is on top
+genes_d <- genes_11[order(variance,decreasing = T),]
+# Log2-normalize data for plotting
+log2.genes_d <- log2(genes_d)
+#log2.genes_d <- log2.genes_d[!(row.names(log2.genes_d) %in% c("13")),]
+# removing columns where ther is an infinite valu bevause heatmap will not run if ther is one
+log2.genes_d <- subset(log2.genes_d, select = -106)
+log2.genes_d <- subset(log2.genes_d, select = -116)
+#log2.genes_d <- as.matrix(log2.genes_d)
+#class(log2.genes_d)
+#as.numeric(log2.genes_d[,1:126])
+```
+
+
+
+
+```{r}
+library(pheatmap)
+#generate a heatmap
+#png(file="heatmap.jpg")
+
+annotationData <- data.frame(row.names = colnames(log2.genes_d[1:10,]),
+                             'Disease_Status' = c(factor(myData$Disease.Status[1:124],labels = c('COVID','non-COVID'))))
+annotationData2 <- data.frame(row.names = colnames(log2.genes_d[1:10,]),
+                             'ICU_Status' = c(factor(myData$ICU.Status[1:124],labels = c('in ICU','not in ICU'))))
+annotationColors <- list(Status = c('COVID' = 'aquamarine4',
+                                    'non-COVID' = 'deepskyblue4'),
+                         ICU_Status = c('in ICU' = 'aquamarine4',
+                                    'not in ICU' = 'deepskyblue4'))
+
+# Generate heatmap
+pheatmap(as.matrix(log2.genes_d[1:10,]),clustering_distance_cols = 'euclidean',
+         clustering_distance_rows = 'euclidean', annotation_row =annotationData2, annotation_col = annotationData,annotation_colors = annotationColors, show_colnames = FALSE)
+#dev.off()
+#
+```
+
+```{r}
+#generate a plot type that we did not previously discuss in class that describes your data in a new and unique way 
+
+ggplot(myData, aes(sample = Gene.Expression)) +
+  stat_qq() +
+  stat_qq_line()+
+  labs(title = "QQline of LCN2 Gene Expression")+
+  theme(plot.title = element_text(hjust = 0.5))
+ggsave("qqline.png") 
+```

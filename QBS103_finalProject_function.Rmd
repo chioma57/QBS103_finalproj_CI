@@ -1,133 +1,24 @@
 ---
-title: "QBS 103 Final Project"
+title: "QBS 103 Final Project Part 2"
 author: "Chichi Illoh"
-date: "2023-07-24"
+date: "2023-08-08"
 output:
-  html_document: default
   pdf_document: default
+  html_document: default
 ---
-
-## Variables used to generate plots
-Gene:LCN2  
-Continuous variable: Age  
-Categorical Variables: Sex and Disease Status  
-
-The LCN2 gene encodes the protein Lipocalin 2 which plays a role in innate immunity by limiting bacterial growth through the sequestering of iron-containing siderophores. This protein is thought to be be involved in multiple cellular processes: the maintenance of skin homeostasis and suppression of invasiveness and metastasis.
-
-In relation to COVID-19, researchers found that LCN2 is overexpressed in COVID-19 patients. They also found that this gene is linked to neutrophil and virus response activities,so higher expression of this gene leads to inflammatory responses and cilium movement.  
-
-Sources:  
-
-https://www.genecards.org/cgi-bin/carddisp.pl?gene=LCN2  
-
-https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7714049/  
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r}
-setwd("/Users/Student/Desktop/QBS103/qbs103_finalproj")# set working directory
+## Final Project Part 2
 
-```
-
-```{r}
-library(tidyverse)
-
-meta_data = read.csv("QBS103_finalProject_metadata.csv")
-#head(meta_data)
-gene_data = read.csv("QBS103_finalProject_geneExpression.csv")
-#head(gene_data)
-
-# convert into vertical data and extract specific gene: LCN2
-gene_expression = matrix(gene_data[5,2:127]) 
-head(gene_expression)
-
-# new data frame created to link variables from both data sets into one
-myData <- data.frame('Subject ID' = seq(1:126), "Gene.Expression" = gene_expression,'Age' = meta_data$age, 'Sex' = meta_data$sex, 'Disease.Status' = meta_data$disease_status, 'ICU.Status' = meta_data$icu_status)
-head(myData)
-
-
-myData <- myData[!(row.names(myData) %in% c("6","86","104","115")),] # filter out data that do not have exact age and filter out data where sex is unknown
-# Source: https://sparkbyexamples.com/r-programming/drop-dataframe-rows-in-r/?expand_article=1
-
-
-myData$Age<- as.numeric(myData$Age)# Convert age variable to numeric
-myData$Gene.Expression<- as.numeric(myData$Gene.Expression) #convert gene expression variable to numeric
-```
-
-```{r}
-
-# Histogram for gene expression
-ggplot(myData, aes(x=Gene.Expression)) +
-  
-  geom_histogram(binwidth = 39,color = "darkblue", fill = "lightblue")+
-  
-  labs(title = "LCN2 Gene Expression Distribution", x = "LCN2 Gene Expression", y = "Count")
-  
-  
-```
-
-```{r}
-BlankTheme <- theme(# Remove borders and grid lines
-        panel.border = element_blank(), panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(), 
-        # Define my axis
-        axis.line = element_line(colour = "black", linewidth = rel(1)),
-        # Set plot background to white
-        plot.background = element_rect(fill = "white"),
-        panel.background = element_blank(),
-        legend.key = element_rect(fill = 'white'),
-        # Move legend to the top
-        legend.position = 'top')
-# Scatterplot for gene expression and continuous covariate
-ggplot(myData, aes(x = Age, y = Gene.Expression, color = Disease.Status))+
-  
-  geom_point(size = 2)+
-  
-  labs(title = "Gene Expression of LCN2 by Age", x = "Age (yrs)", y = " LCN2 Gene Expression (AU)", color = "Disease Status")+
-  
-  scale_color_manual(values = c("#0066CC", "#CCCCFF")) +
-  
-  BlankTheme
-
-```
-
-```{r}
-BlankTheme <- theme(# Remove borders and grid lines
-        panel.border = element_blank(), panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(), 
-        # Define my axis
-        axis.line = element_line(colour = "black", linewidth = rel(1)),
-        # Set plot background to white
-        plot.background = element_rect(fill = "white"),
-        panel.background = element_blank(),
-        legend.key = element_rect(fill = 'white'), 
-        # Move legend to the top
-        legend.position = 'top')
-# Box plot of gene expression separated by sex and disease status
-
-ggplot(myData, aes(x = Disease.Status, y = Gene.Expression, color = Sex))+
-  
-  geom_boxplot()+
-  
-  scale_color_manual(values = c('#00CC66','#6699CC')) +
-  
-  #scales_x_discrete
-  
-  labs(title = "Gene Expression of LCN2 grouped by Disease status\n and categorized by Sex", x = "Disease Status", y = "LCN2 Gene Expression (AU)")+
-  
-  BlankTheme
-
-```
 
 ```{r}
 meta_data = read.csv("QBS103_finalProject_metadata.csv")
 #head(meta_data)
 gene_data = read.csv("QBS103_finalProject_geneExpression.csv")
 #head(gene_data)
-
-
 
 ```
 
@@ -251,7 +142,6 @@ stats_plts <- function(data_frame, gene_names,contin_covariate,categorical_var1,
 }
 
 
-stats_plts(gene_data, gene_names = list("LCN2","CD24","PRTN3"), meta_data$age, meta_data$disease_status,meta_data$icu_status)
+stats_plts(gene_data, gene_names = list("LCN2","CD24","BPI"), meta_data$age, meta_data$disease_status,meta_data$icu_status)
 
 ```
-
